@@ -29,6 +29,6 @@ jobs:
       - name: Upload to Deno Deploy
         uses: denoland/deployctl@v1
         with:
-          project: "akku-deno-secret-11"
+          project: "deno-secret-11ovkt51v8"
           entrypoint: "main.ts"
           root: "."
