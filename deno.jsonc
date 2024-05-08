@@ -28,7 +28,7 @@
     "@preact/signals": "https://esm.sh/*@preact/signals@1.2.2",
     "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.5.1",
     "$std/": "https://deno.land/std@0.216.0/",
-    "$hono": "https://deno.land/x/hono@v4.3.2/"
+    "$hono/": "https://deno.land/x/hono@v4.3.2/"
   },
   "compilerOptions": {
     "jsx": "react-jsx",
