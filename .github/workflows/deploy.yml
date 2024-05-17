@@ -29,6 +29,15 @@ jobs:
       - name: Upload to Deno Deploy
         uses: denoland/deployctl@v1
         with:
-          project: "deno-secret-11ovkt51v8"
+          project: ${{ secrets.DeployProject }}
           entrypoint: "main.ts"
           root: "."
+
+      - run: |
+         if [ -n "$(git status --porcelain)" ]; then
+           git config user.name "github-actions[bot]"
+           git config user.email "github-actions[bot]@users.noreply.github.com"
+           git add -A
+           git commit -m "DB"
+           git push
+         fi
