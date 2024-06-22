@@ -1,13 +1,6 @@
-/// <reference no-default-lib="true" />
-/// <reference lib="dom" />
-/// <reference lib="dom.iterable" />
-/// <reference lib="dom.asynciterable" />
-/// <reference lib="deno.ns" />
+import { Hono } from 'hono'
+const app = new Hono()
 
-import "$std/dotenv/load.ts";
+app.get('/', (c) => c.text('Hono!'))
 
-import { start } from "$fresh/server.ts";
-import manifest from "./fresh.gen.ts";
-import config from "./fresh.config.ts";
-
-await start(manifest, config);
+export default app
