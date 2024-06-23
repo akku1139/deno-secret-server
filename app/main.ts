@@ -114,7 +114,7 @@ app.use("/api/store/:id/*",
     if(type === null || typeof type === "undefined") {
       return c.notFound()
     }
-    if(!secretType.includes(type)) {
+    if(!((secretType as readonly any[]).includes(type))) {
       return c.text("Wrong: \"type\"", 400)
     }
     c.set("type", type)
