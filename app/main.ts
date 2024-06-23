@@ -29,27 +29,60 @@ app.get("/api", (c) => c.text("api!"))
 
 app.post("/api/store",
   validator("json", (value, c) => {
-    const type = value["type"]
+    const type = value.type
     if(typeof type == "undefined") {
-      return c.json({
-        missing: "type"
-      }, 400)
+      return c.text("Missing value: \"type\"", 400)
     }
 
-    if(!["text", "list", "kv"].includes(type)) {
-      return c.json({
-        wrong: "type"
-      }, 400)
+    if(!["text", "array", "json"].includes(type)) {
+      return c.text("Wrong value: \"type\"", 400)
     }
 
-    return value
+    let init
+    switch(type) {
+      case "text":
+        if(typeof value.init === "undefined") {
+          init = ""
+        } else if(typeof value.init === "string") {
+          init = value.init
+        } else {
+          return c.text("Wrong type: \"init\"", 400)
+        }
+        break
+        case "array":
+          if(typeof value.init === "undefined") {
+            init = []
+          } else if(Array.isArray(value.init)) {
+            init = value.init
+          } else {
+            return c.text("Wrong type: \"init\"", 400)
+          }
+          break
+        case "json":
+          if(typeof value.init === "undefined") {
+            init = {}
+          } else if(typeof value.init === 'object' && value.init !== null && !Array.isArray(value.init)) {
+            init = value.init
+          } else {
+            return c.text("Wrong type: \"init\"", 400)
+          }
+          break
+    }
+
+    return {
+      type,
+      init
+    }
   }),
   async (c) => {
-    const req = await c.req.json()
+    const req = c.req.valid("json")
     const id = crypto.randomUUID()
     await kv.set(["store", id, "type"], req.type)
+    await kv.set(["store", id, "content"], req.init)
+
     return c.json({
       id,
+      content: req.init
     }, 201, {
       Location: `/api/store/${id}`
     })
@@ -63,11 +96,7 @@ app.use("/api/store/:id/*", validator("param", async (value, c) => {
     return c.notFound()
   }
 
-  switch(type) {
-    case "text":
-      const content = (await kv.get(["store", id, "content"])).value
-      break
-  }
+  const content = (await kv.get(["store", id, "content"])).value
 
   return c.json({
     type: type,
