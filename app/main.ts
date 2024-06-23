@@ -82,6 +82,7 @@ app.post("/api/store",
 
     return c.json({
       id,
+      type: req.type,
       content: req.init
     }, 201, {
       Location: `/api/store/${id}`
@@ -99,6 +100,7 @@ app.use("/api/store/:id/*", validator("param", async (value, c) => {
   const content = (await kv.get(["store", id, "content"])).value
 
   return c.json({
+    id,
     type: type,
     content,
   })
