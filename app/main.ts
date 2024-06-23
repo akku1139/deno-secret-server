@@ -1,6 +1,7 @@
 import { Context, Hono } from "hono"
 const app = new Hono()
-import { validator } from 'hono/validator'
+import { validator } from "hono/validator"
+import { createMiddleware } from "hono/factory"
 
 import { bearerAuth } from "hono/bearer-auth"
 import { getCookie }from "hono/cookie"
@@ -8,7 +9,9 @@ import { getCookie }from "hono/cookie"
 app.get("/", (c) => c.text("Hono!"))
 
 const kv = await Deno.openKv()
-
+/*
+ステータスコードについて
+https://qiita.com/uenosy/items/ba9dbc70781bddc4a491
 /*
 CORS
 CSRF
@@ -101,33 +104,67 @@ app.post("/api/store",
   }
 )
 
-app.use("/api/store/:id/*", validator("param", async (value, c) => {
-  const id = value["id"] ?? ""
-  const type = (await kv.get(["store", id, "type"])).value
-  if(type === null) {
-    return c.notFound()
-  }
+app.use("/api/store/:id/*",
+  validator("param", (value, _c) => {
+    const id = value["id"]
+    if(typeof id === "undefined" || id === "") {
+      throw new Response("Internal server error", {status: 500})
+    }
+    return {
+      id
+    }
+  }),
+  createMiddleware<{
+    Variables: {
+      type: string
+    }
+  }>(async (c, next) => {
+    const type = (await kv.get(["store", c.req.param("id") ?? "", "type"])).value
+    if(type === null || typeof type === "undefined") {
+      return c.notFound()
+    }
+    if(!secretType.includes(type)) {
+      return c.text("Wrong: \"type\"", 400)
+    }
+    c.set("type", type)
+    await next()
+  })
+)
 
+app.get("/api/store/:id", async (c) => {
+  const { id } = c.req.param()
+  const type = c.var.type
   const content = (await kv.get(["store", id, "content"])).value
-
   return c.json({
     id,
     type: type,
     content,
   })
-}))
-
-app.get("/api/store/:id", async (c) => {
-  const { id } = c.req.param()
-  const type = await kv.get(["store", id, "type"])
-  switch(type.value) {
-    case "text":
-      break
-
-    default:
-
-  }
 })
+
+app.post("/api/store/:id",
+  validator("json", (value, c) => {
+    const type = c.get("type")
+
+    const init = valiType(c, type, value)
+    if(init instanceof Response) {
+      return init
+    }
+
+    return value
+  }),
+  async (c) => {
+    const { id } = c.req.param()
+    const type = c.var.type
+    const newContent = c.req.valid("json")
+    await kv.set(["store", id, "content"], newContent)
+    return c.json({
+      id,
+      type: type,
+      content: newContent,
+    })
+  }
+)
 
 Deno.serve({
   port: Number(Deno.env.get("PORT")) ?? 8000
