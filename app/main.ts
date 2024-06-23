@@ -1,4 +1,4 @@
-import { Hono } from "hono"
+import { Context, Hono } from "hono"
 const app = new Hono()
 import { validator } from 'hono/validator'
 
@@ -25,6 +25,43 @@ app.use("/api/*", async (c, next) => {
   }
 })
 
+const secretType = ["text", "list", "json"] as const
+type SecretType = (typeof secretType)[number]
+
+const valiType = (c: Context, type: SecretType, value: any /* string | Array<any> | Object */) => {
+  let init
+  switch(type) {
+    case "text":
+      if(typeof value === "undefined") {
+        init = ""
+      } else if(typeof value === "string") {
+        init = value
+      } else {
+        return c.text("Wrong type: \"init\"", 400)
+      }
+      break
+      case "list":
+        if(typeof value === "undefined") {
+          init = []
+        } else if(Array.isArray(value)) {
+          init = value
+        } else {
+          return c.text("Wrong type: \"init\"", 400)
+        }
+        break
+      case "json":
+        if(typeof value === "undefined") {
+          init = {}
+        } else if(typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          init = value
+        } else {
+          return c.text("Wrong type: \"init\"", 400)
+        }
+        break
+  }
+  return init
+}
+
 app.get("/api", (c) => c.text("api!"))
 
 app.post("/api/store",
@@ -34,39 +71,13 @@ app.post("/api/store",
       return c.text("Missing value: \"type\"", 400)
     }
 
-    if(!["text", "array", "json"].includes(type)) {
+    if(!secretType.includes(type)) {
       return c.text("Wrong value: \"type\"", 400)
     }
 
-    let init
-    switch(type) {
-      case "text":
-        if(typeof value.init === "undefined") {
-          init = ""
-        } else if(typeof value.init === "string") {
-          init = value.init
-        } else {
-          return c.text("Wrong type: \"init\"", 400)
-        }
-        break
-        case "array":
-          if(typeof value.init === "undefined") {
-            init = []
-          } else if(Array.isArray(value.init)) {
-            init = value.init
-          } else {
-            return c.text("Wrong type: \"init\"", 400)
-          }
-          break
-        case "json":
-          if(typeof value.init === "undefined") {
-            init = {}
-          } else if(typeof value.init === 'object' && value.init !== null && !Array.isArray(value.init)) {
-            init = value.init
-          } else {
-            return c.text("Wrong type: \"init\"", 400)
-          }
-          break
+    const init = valiType(c, type, value.init)
+    if(init instanceof Response) {
+      return init
     }
 
     return {
