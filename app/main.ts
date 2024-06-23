@@ -105,21 +105,12 @@ app.post("/api/store",
 )
 
 app.use("/api/store/:id/*",
-  validator("param", (value, _c) => {
-    const id = value["id"]
-    if(typeof id === "undefined" || id === "") {
-      throw new Response("Internal server error", {status: 500})
-    }
-    return {
-      id
-    }
-  }),
   createMiddleware<{
     Variables: {
       type: string
     }
   }>(async (c, next) => {
-    const type = (await kv.get(["store", c.req.param("id") ?? "", "type"])).value
+    const type = (await kv.get(["store", c.req.param("id"), "type"])).value
     if(type === null || typeof type === "undefined") {
       return c.notFound()
     }
