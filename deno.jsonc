@@ -16,7 +16,5 @@
     "hono": "jsr:@hono/hono@^4.4.7"
   },
   "compilerOptions": {
-    "jsx": "react-jsx",
-    "jsxImportSource": "preact"
   }
 }
